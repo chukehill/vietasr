@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  speech2text:
+    container_name: speech2text_app
+    hostname: speech2text_app
+    image: speech2text_app
+    build:
+      context: .
+      dockerfile: Dockerfile_app
+    tty: true
+    volumes:
+      - ./:/home/root/speech2text/demo_vietasr
+    ports:
+      - "3000:3000"

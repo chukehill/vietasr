@@ -1,0 +1,4 @@
+FROM speech2text
+
+RUN pip install flask transformers==4.9.2 soundfile datasets==1.11.0 pyctcdecode==v0.1.0
+CMD ["python", "app.py", "0.0.0.0"]
