@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  speech2text:
+    container_name: speech2text
+    hostname: speech2text
+    image: speech2text
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["tail", "-f", "/dev/null"]
+    tty: true
+    volumes:
+      - ./:/home/root/speech2text/demo_vietasr

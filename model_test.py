@@ -5,8 +5,8 @@ from infer import restore_model, load_audio
 
 #đường dẫn tới checkpoint và file config cho model
 config = 'config/quartznet12x1_abcfjwz.yaml'
-encoder_checkpoint = 'model_vietasr/checkpoints/JasperEncoder-STEP-1312684.pt'
-decoder_checkpoint = 'model_vietasr/checkpoints/JasperDecoderForCTC-STEP-1312684.pt'
+encoder_checkpoint = 'data/checkpoints/JasperEncoder-STEP-1312684.pt'
+decoder_checkpoint = 'data/checkpoints/JasperDecoderForCTC-STEP-1312684.pt'
 
 neural_factory = restore_model(config, encoder_checkpoint, decoder_checkpoint)
 print('restore model checkpoint done!')
