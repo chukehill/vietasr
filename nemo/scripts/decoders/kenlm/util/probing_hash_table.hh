@@ -1,8 +1,8 @@
 #ifndef UTIL_PROBING_HASH_TABLE_H
 #define UTIL_PROBING_HASH_TABLE_H
 
-#include "util/exception.hh"
-#include "util/mmap.hh"
+#include "exception.hh"
+#include "mmap.hh"
 
 #include <algorithm>
 #include <cstddef>
@@ -30,7 +30,7 @@ class DivMod {
   public:
     explicit DivMod(std::size_t buckets) : buckets_(buckets) {}
 
-    static std::size_t RoundBuckets(std::size_t from) {
+    static uint64_t RoundBuckets(uint64_t from) {
       return from;
     }
 
@@ -58,7 +58,7 @@ class Power2Mod {
     }
 
     // Round up to next power of 2.
-    static std::size_t RoundBuckets(std::size_t from) {
+    static uint64_t RoundBuckets(uint64_t from) {
       --from;
       from |= from >> 1;
       from |= from >> 2;

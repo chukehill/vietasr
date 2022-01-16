@@ -28,7 +28,7 @@ cdef class FullScoreReturn:
 
     def __repr__(self):
         return '{0}({1}, {2}, {3})'.format(self.__class__.__name__, repr(self.log_prob), repr(self.ngram_length), repr(self.oov))
-    
+
     property log_prob:
         def __get__(self):
             return self.log_prob
@@ -46,7 +46,7 @@ cdef class State:
     Wrapper around lm::ngram::State so that python code can make incremental queries.
 
     Notes:
-        * rich comparisons 
+        * rich comparisons
         * hashable
     """
 
@@ -70,6 +70,14 @@ cdef class State:
     def __hash__(self):
         return _kenlm.hash_value(self._c_state)
 
+    def __copy__(self):
+        ret = State()
+        ret._c_state = self._c_state
+        return ret
+
+    def __deepcopy__(self):
+        return self.__copy__()
+
 class LoadMethod:
     LAZY = _kenlm.LAZY
     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
@@ -77,10 +85,15 @@ class LoadMethod:
     READ = _kenlm.READ
     PARALLEL_READ = _kenlm.PARALLEL_READ
 
+class ARPALoadComplain:
+    ALL = _kenlm.ALL
+    EXPENSIVE = _kenlm.EXPENSIVE
+    NONE = _kenlm.NONE
+
 cdef class Config:
     """
     Wrapper around lm::ngram::Config.
-    Pass this to Model's constructor to set the load_method.
+    Pass this to Model's constructor to set configuration options.
     """
     cdef _kenlm.Config _c_config
 
@@ -92,6 +105,18 @@ cdef class Config:
             return self._c_config.load_method
         def __set__(self, to):
             self._c_config.load_method = to
+
+    property show_progress:
+        def __get__(self):
+            return self._c_config.show_progress
+        def __set__(self, to):
+            self._c_config.show_progress = to
+
+    property arpa_complain:
+        def __get__(self):
+            return self._c_config.arpa_complain
+        def __set__(self, to):
+            self._c_config.arpa_complain = to
 
 cdef class Model:
     """
@@ -164,6 +189,8 @@ cdef class Model:
         #Unlike <s>, the end of sentence token </s> can appear explicitly.
         model.score("a fragment </s>", bos = False, eos = False)
         """
+        if bos and eos:
+            return _kenlm.ScoreSentence(self.model, as_str(sentence))
         cdef list words = as_str(sentence).split()
         cdef _kenlm.State state
         if bos:
@@ -189,7 +216,7 @@ cdef class Model:
     
     def full_scores(self, sentence, bos = True, eos = True):
         """
-        full_scores(sentence, bos = True, eos = Ture) -> generate full scores (prob, ngram length, oov)
+        full_scores(sentence, bos = True, eos = True) -> generate full scores (prob, ngram length, oov)
         @param sentence is a string (do not use boundary symbols)
         @param bos should kenlm add a bos state
         @param eos should kenlm add an eos state
@@ -237,7 +264,7 @@ cdef class Model:
     
     def BaseFullScore(self, State in_state, str word, State out_state):
         """
-        Wrapper around model.BaseScore(in_state, Index(word), out_state)
+        Wrapper around model.BaseFullScore(in_state, Index(word), out_state)
 
         :param word: the suffix
         :param state: the context (defaults to NullContext)
@@ -255,7 +282,7 @@ cdef class Model:
         return '<Model from {0}>'.format(os.path.basename(self.path))
 
     def __reduce__(self):
-        return (_kenlm.LanguageModel, (self.path,))
+        return (Model, (self.path,))
 
 class LanguageModel(Model):
     """Backwards compatability stub.  Use Model."""

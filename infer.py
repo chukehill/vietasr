@@ -96,7 +96,7 @@ def restore_model(config_file, encoder_checkpoint, decoder_checkpoint):
     model_definition['AudioToMelSpectrogramPreprocessor']['pad_to'] = 0
 
     neural_factory = nemo.core.NeuralModuleFactory(
-        placement=nemo.core.DeviceType.GPU,
+        placement=nemo.core.DeviceType.CPU,
         backend=nemo.core.Backend.PyTorch)
     #print(model_definition)
     data_layer = AudioDataLayer(sample_rate=model_definition['AudioToMelSpectrogramPreprocessor']['sample_rate'])
@@ -113,7 +113,7 @@ def restore_model(config_file, encoder_checkpoint, decoder_checkpoint):
 
     greedy_decoder = nemo_asr.GreedyCTCDecoder()
     labels = model_definition['labels']
-    beam_search_lm = nemo_asr.BeamSearchDecoderWithLM(vocab=labels, beam_width=200, alpha=2, beta=2.5, lm_path="NeMo/scripts/language_model2/5-gram-lm.binary", num_cpus=4)
+    beam_search_lm = nemo_asr.BeamSearchDecoderWithLM(vocab=labels, beam_width=200, alpha=2, beta=2.5, lm_path="nemo/scripts/language_model2/5-gram-lm.binary", num_cpus=4)
 
     # load pre-trained model
     jasper_encoder.restore_from(CHECKPOINT_ENCODER)

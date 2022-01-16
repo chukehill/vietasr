@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 
 if [ ! -d kenlm ]; then
-    git clone https://github.com/luotao1/kenlm.git
+    git clone https://github.com/kpu/kenlm.git
+    echo -e "\n"
+fi
+
+if [ ! -d kenlm/build ]; then
+    mkdir kenlm/build
+    cd kenlm/build
+    cmake ..
+    make
+    cd ../..
     echo -e "\n"
 fi
 
@@ -19,3 +28,5 @@ fi
 
 echo "Install decoders ..."
 python setup.py install --num_processes 4
+echo "Testing installation ..."
+python ctc_decoders_test.py

@@ -1,3 +1,5 @@
+from libcpp cimport bool
+
 cdef extern from "lm/word_index.hh" namespace "lm":
     ctypedef unsigned WordIndex
 
@@ -37,14 +39,25 @@ cdef extern from "util/mmap.hh" namespace "util":
         READ
         PARALLEL_READ
 
+cdef extern from "lm/config.hh" namespace "lm::ngram::Config":
+    cdef enum ARPALoadComplain:
+        ALL
+        EXPENSIVE
+        NONE
+
 cdef extern from "lm/config.hh" namespace "lm::ngram":
     cdef cppclass Config:
         Config()
         float probing_multiplier
         LoadMethod load_method
+        bool show_progress
+        ARPALoadComplain arpa_complain
+        float unknown_missing_logprob
 
 cdef extern from "lm/model.hh" namespace "lm::ngram":
     cdef Model *LoadVirtual(char *, Config &config) except +
     #default constructor
     cdef Model *LoadVirtual(char *) except +
 
+cdef extern from "python/score_sentence.hh" namespace "lm::base":
+    cdef float ScoreSentence(const Model *model, const char *sentence)

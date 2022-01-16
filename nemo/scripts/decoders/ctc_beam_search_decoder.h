@@ -31,6 +31,52 @@ std::vector<std::pair<double, std::string>> ctc_beam_search_decoder(
     size_t cutoff_top_n = 40,
     Scorer *ext_scorer = nullptr);
 
+
+class BeamDecoder {
+public:
+  BeamDecoder(const std::vector<std::string> &vocabulary,
+         size_t beam_size,
+         double cutoff_prob = 1.0,
+         size_t cutoff_top_n = 40,
+         Scorer *ext_scorer = nullptr);
+  ~BeamDecoder();
+
+  // decode a frame
+  std::vector<std::pair<double, std::string>> decode(const std::vector<std::vector<double>> &probs_seq);
+
+  void get_word_timestamps(
+      std::vector<std::tuple<std::string, uint32_t, uint32_t>>& words);
+
+  void add_start_offset(int offset) { time_offset += offset; }
+  void set_start_offset(int offset) { time_offset = offset; }
+
+  // reset state
+  void reset(bool keep_offset = false, bool keep_words = false);
+
+private:
+  Scorer *ext_scorer;
+  size_t beam_size;
+  double cutoff_prob;
+  size_t cutoff_top_n;
+
+  // state
+  std::vector<std::string> vocabulary;
+  size_t blank_id;
+  int space_id;
+  // for word timestamps
+  int time_offset; // time offset to be added to all prefixes
+  int prev_time_offset; // time offset of previous decode. Needed when decoding
+                        // multiple sentences with VAD.
+  int last_decoded_timestep; // timestep of the last parsed prefix
+  std::vector<std::tuple<std::string, uint32_t, uint32_t>> prev_wordlist;
+  std::vector<std::tuple<std::string, uint32_t, uint32_t>> wordlist;
+
+  PathTrie *root;
+  std::vector<PathTrie *> prefixes;
+};
+
+
+
 /* CTC Beam Search Decoder for batch data
 
  * Parameters:
