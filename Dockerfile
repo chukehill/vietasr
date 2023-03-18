@@ -32,8 +32,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     pip install --upgrade setuptools 
 
 # Clone this fork
-WORKDIR /home/root/speech2text/vietasr
-RUN git clone https://github.com/chukehill/vietasr.git
+RUN git clone https://github.com/chukehill/vietasr.git /home/root/speech2text/vietasr
 # Create simlink
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
