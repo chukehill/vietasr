@@ -56,4 +56,5 @@ WORKDIR /home/root/speech2text/vietasr
 RUN pip install https://github.com/kpu/kenlm/archive/master.zip flask transformers==4.9.2 soundfile datasets==1.11.0 pyctcdecode==v0.1.0
 RUN pip install nemo_toolkit[all]==1.5.1
 RUN python infer.py audio_samples
+RUN pip install loguru
 CMD ["python", "./app.py"]
