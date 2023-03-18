@@ -1,82 +1,61 @@
-import sys
-from flask import Flask, request, jsonify
-import traceback
+import os
+import librosa
+from flask import Flask, request, json
+# from scipy.io.wavfile import write as write_wav
+from loguru import logger
 
-from infer import restore_model, load_audio
+from infer import VietASR
 
-from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
-from datasets import load_dataset
-import soundfile as sf
-import torch
+app = Flask(__name__)
+app.config["SECRET_KEY"] = "Long@123"
+app.config["DEBUG"] = True
 
-app = Flask("speech2text")
-cache = {}
+config = 'configs/quartznet12x1_vi.yaml'
+encoder_checkpoint = 'models/acoustic_model/vietnamese/JasperEncoder-STEP-289936.pt'
+decoder_checkpoint = 'models/acoustic_model/vietnamese/JasperDecoderForCTC-STEP-289936.pt'
+lm_path = 'models/language_model/3-gram-lm.binary'
 
+vietasr = VietASR(
+    config_file=config,
+    encoder_checkpoint=encoder_checkpoint,
+    decoder_checkpoint=decoder_checkpoint,
+    lm_path=lm_path,
+    beam_width=50
+)
 
-def load_model():
-    # https://github.com/dangvansam98/demo_vietasr
-    config = 'config/quartznet12x1_abcfjwz.yaml'
-    encoder_checkpoint = 'data/checkpoints/JasperEncoder-STEP-1312684.pt'
-    decoder_checkpoint = 'data/checkpoints/JasperDecoderForCTC-STEP-1312684.pt'
+STATIC_DIR = "static"
+UPLOAD_DIR = "upload"
+RECORD_DIR = "record"
 
-    neural_factory = restore_model(config, encoder_checkpoint, decoder_checkpoint)
-    
-    # https://huggingface.co/nguyenvulebinh/wav2vec2-base-vietnamese-250h
-    # load model and tokenizer
-    processor = Wav2Vec2Processor.from_pretrained("nguyenvulebinh/wav2vec2-base-vietnamese-250h")
-    model = Wav2Vec2ForCTC.from_pretrained("nguyenvulebinh/wav2vec2-base-vietnamese-250h")
+os.makedirs(os.path.join(STATIC_DIR, UPLOAD_DIR), exist_ok=True)
+os.makedirs(os.path.join(STATIC_DIR, RECORD_DIR), exist_ok=True)
 
-    return neural_factory, processor, model
-
-
-def analyze_from_path(path):
-    sig = load_audio(path)
-    greedy_hypotheses, beam_hypotheses = cache["neural_factory"].infer_signal(sig)
-    
-    speech, _ = sf.read(path)
-    # tokenize
-    input_values = processor(speech, return_tensors="pt", padding="longest").input_values  # Batch size 1
-
-    # retrieve logits
-    logits = model(input_values).logits
-
-    # take argmax and decode
-    predicted_ids = torch.argmax(logits, dim=-1)
-    transcription = processor.batch_decode(predicted_ids)
-    return {
-        "model1": greedy_hypotheses,
-        "model2": beam_hypotheses,
-        "model3": transcription[0]
-    }
-    
-@app.route("/", methods=["POST"])
-def analyze():
-    try:
-        json_ = request.json
-        
-        text_result = {}
-        if json_ is not None:
-            if "path" in json_:
-                text_result = analyze_from_path(json_["path"])
-
-        return jsonify(text_result)
-
-    except:
-
-        return jsonify({"trace": traceback.format_exc()})
+@app.route('/process', methods=['POST'])
+def handle_upload():
+    _file = request.files['file']
+    if _file.filename == '':
+        response = app.response_class(
+            response=json.dumps({"message": "error"}),
+            status=400,
+            mimetype='application/json'
+        )
+        return response
+    logger.info(f'file uploaded: {_file.filename}')
+    filepath = os.path.join(STATIC_DIR, UPLOAD_DIR, _file.filename)
+    _file.save(filepath)
+    logger.info(f'saved file to: {filepath}')
+    audio_signal, _ = librosa.load(filepath, sr=16000)
+    transcript = vietasr.transcribe(audio_signal)
+    logger.info(f'transcript: {transcript}')
+    response = app.response_class(
+        response=json.dumps({
+            "transcript": transcript,
+            "audiopath": filepath}),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 
-if __name__ == "__main__":
-    try:
-        ip = int(sys.argv[1]) 
-    except:
-        ip = "127.0.0.1"
-
-    print("Restoring model.")
-    neural_factory, processor, model = load_model()
-    cache["neural_factory"] = neural_factory
-    cache["processor"] = processor
-    cache["model"] = model
-    print("Model restored.")
-
-    app.run(host=ip, port=3000, debug=True) # , debug=True
+if __name__ == '__main__':
+    Flask.run(app, host="0.0.0.0", port=5000, debug=True)

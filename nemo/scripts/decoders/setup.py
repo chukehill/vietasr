@@ -4,11 +4,14 @@ from __future__ import division
 from __future__ import print_function
 
 from setuptools import setup, Extension, distutils
+import setuptools
+from distutils import ccompiler
 import glob
 import platform
 import os, sys, shutil
 import multiprocessing.pool
 import argparse
+
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(

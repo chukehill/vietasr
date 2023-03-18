@@ -32,27 +32,29 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
     pip install --upgrade setuptools 
 
 # Clone this fork
-WORKDIR /home/root/speech2text 
-RUN git clone https://github.com/detrin/demo_vietasr.git
-
+WORKDIR /home/root/speech2text/vietasr
+ADD . .
 # Create simlink
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
-WORKDIR /home/root/speech2text/demo_vietasr/nemo/scripts/decoders/kenlm
+WORKDIR /home/root/speech2text/vietasr/nemo/scripts/decoders/kenlm
 RUN echo $(ls)
 RUN mkdir build
-WORKDIR /home/root/speech2text/demo_vietasr/nemo/scripts/decoders/kenlm/build
+WORKDIR /home/root/speech2text/vietasr/nemo/scripts/decoders/kenlm/build
 RUN cmake ..
 RUN make -j
 
-WORKDIR /home/root/speech2text/demo_vietasr/nemo/scripts/decoders
+WORKDIR /home/root/speech2text/vietasr/nemo/scripts/decoders
 # python setup.py doesn't work properly in docker
 RUN pip install .
 # _swig_decoders missing error while importing ctc_decoders
-RUN cp build/lib.linux-x86_64-3.8/_swig_decoders.cpython-38-x86_64-linux-gnu.so .
+#RUN cp build/lib.linux-x86_64-3.8/_swig_decoders.cpython-38-x86_64-linux-gnu.so .
 RUN python ctc_decoders_test.py
 
-WORKDIR /home/root/speech2text/demo_vietasr
+WORKDIR /home/root/speech2text/vietasr
 # seems like it works with v1.5.1, also it installs all needed packages
-# but we still have to use the locally cloned repo in demo_vietasr
+# but we still have to use the locally cloned repo in vietasr
+RUN pip install https://github.com/kpu/kenlm/archive/master.zip flask transformers==4.9.2 soundfile datasets==1.11.0 pyctcdecode==v0.1.0
 RUN pip install nemo_toolkit[all]==1.5.1
+RUN python infer.py audio_samples
+CMD ["python", "./app.py"]
