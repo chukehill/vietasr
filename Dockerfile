@@ -33,7 +33,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 # Clone this fork
 WORKDIR /home/root/speech2text/vietasr
-ADD . .
+RUN git clone https://github.com/chukehill/vietasr.git
 # Create simlink
 RUN ln -s /usr/bin/python3.8 /usr/bin/python
 
